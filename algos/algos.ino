@@ -10,6 +10,12 @@ Stepper rightStepper = Stepper(1, 5, 6, 7, 8);
 float ASIXRAD = 0.2;  //in meters
 float STEP = 0.407; //in meters
 int currrentDegree = 90;
+float ANGLE1 = -0.5220606137663;
+float ANGLE2 = 1.6892230152479;
+float ANGLE3 = -1.87241134533886;
+float LENGTH1 = 1.3777729753917625899280575539568;
+float LENGTH2 = 1.5019956360591366906474820143898;
+float LENGTH3 = 1.2707671414905035971223021582744;
 
 bool moveForward = false;
 bool moveBackwards = false;
@@ -34,22 +40,31 @@ float getAngleRad(Cord start, Cord finish)
   return atan((finish.cordY - start.cordY) / (finish.cordX - start.cordX));
 };
 
-void move(float distanceLength)
+void makeMovement(float distanceLength)
 {
   float distanceLengthSteps = distanceLength / STEP;
-  for (float i = 0; i < distanceLengthSteps; i += 0.01)
-    {
-      leftStepper.step(0.01);
-      rightStepper.step(0.01);
-      digitalWrite(12, LOW);
-      
-    };
+  if(distanceLengthSteps > 0)
+  {
+    for (float i = 0; i < distanceLengthSteps; i += 0.01)
+      {
+        leftStepper.step(0.01);
+        rightStepper.step(0.01);
+      };
+  }
+  if(distanceLengthSteps < 0)
+  {
+    for (float i = 0; i < distanceLengthSteps; i += 0.01)
+      {
+        leftStepper.step(-0.01);
+        rightStepper.step(-0.01);
+      };    
+  }
 };
 
 void rotateStill(float angleRad)
 {
   float arcLengthSteps = (angleRad * ASIXRAD) / STEP;
-  if (angleRad <= M_PI)
+  if (angleRad > 0)
   {
     for (int i = 0; i < arcLengthSteps; i += 0.01)
     {
@@ -69,10 +84,20 @@ void rotateStill(float angleRad)
 
 void doMision(Cord start, Cord finish)
 {
-  rotateStill(getAngleRad(start, finish));
+  rotateStill(ANGLE1);
   delay(1000);
-  leftStepper.step(getDistanceInSteps(start, finish));
-  rightStepper.step(getDistanceInSteps(start, finish));
+  makeMovement(LENGTH1);
+  delay(1000);
+  
+  rotateStill(ANGLE2);
+  delay(1000);
+  makeMovement(LENGTH2);
+  delay(1000);
+  
+  rotateStill(ANGLE3);
+  delay(1000);
+  makeMovement(LENGTH3);
+  delay(1000);
 };
 
 void rotateFrontAsix(int angleGrad)
@@ -93,11 +118,11 @@ void loop() {
   int checkedDegree = static_cast < int > (checkedPosition);
   if(moveForward)
   {
-    move(0.01);
+    makeMovement(0.01);
   };
   if(moveBackwards)
   {
-    move(-0.01);
+    makeMovement(-0.01);
   };
   if(checkedDegree > currrentDegree)
   {
