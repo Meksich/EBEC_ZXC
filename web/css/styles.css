@@ -1,0 +1,25 @@
+body
+{
+
+}
+
+.filler
+{
+	display: inline-block;
+	width:100px;
+	height:100px;
+
+}
+button
+{
+	display: inline-block;
+	width:100px;
+	height:100px;
+
+	background-color: red;
+}
+
+button:active
+{
+	background-color: green;
+}
