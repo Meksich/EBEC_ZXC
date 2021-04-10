@@ -10,6 +10,13 @@
 #include "soc/rtc_cntl_reg.h"   //disable brownout problems
 #include "esp_http_server.h"
 
+// Config
+#define CTL_PIN     11
+#define CTL_PORT    8080
+#define CAM_PORT    80
+#define LOOP_DELAY  200
+
+// Camera
 #define PART_BOUNDARY "123456789000000000000987654321"
 
 #define CAMERA_MODEL_AI_THINKER
@@ -53,6 +60,7 @@
   #define VSYNC_GPIO_NUM    22
   #define HREF_GPIO_NUM     26
   #define PCLK_GPIO_NUM     21
+
 #elif defined(CAMERA_MODEL_M5STACK_WITHOUT_PSRAM)
   #define PWDN_GPIO_NUM     -1
   #define RESET_GPIO_NUM    15
@@ -114,22 +122,22 @@ static esp_err_t stream_handler(httpd_req_t* req){
   char* part_buf[64];
 
   res = httpd_resp_set_type(req, kStreamContextType);
-  if(res != ESP_OK){
+  if (res != ESP_OK) {
     return res;
   }
 
-  while(true){
+  while (true) {
     fb = esp_camera_fb_get();
     if (!fb) {
       Serial.println("Camera capture failed");
       res = ESP_FAIL;
     } else {
-      if(fb->width > 400){
-        if(fb->format != PIXFORMAT_JPEG){
+      if (fb->width > 400) {
+        if (fb->format != PIXFORMAT_JPEG) {
           bool jpeg_converted = frame2jpg(fb, 80, &jpg_buf, &jpg_buf_len);
           esp_camera_fb_return(fb);
           fb = NULL;
-          if(!jpeg_converted){
+          if (!jpeg_converted) {
             Serial.println("JPEG compression failed");
             res = ESP_FAIL;
           }
@@ -139,17 +147,17 @@ static esp_err_t stream_handler(httpd_req_t* req){
         }
       }
     }
-    if(res == ESP_OK){
+    if (res == ESP_OK) {
       size_t hlen = snprintf((char*)part_buf, 64, kStreamPart, jpg_buf_len);
       res = httpd_resp_send_chunk(req, (const char*)part_buf, hlen);
     }
-    if(res == ESP_OK){
+    if (res == ESP_OK) {
       res = httpd_resp_send_chunk(req, (const char*)jpg_buf, jpg_buf_len);
     }
-    if(res == ESP_OK){
+    if (res == ESP_OK) {
       res = httpd_resp_send_chunk(req, kStreamBoundary, strlen(kStreamBoundary));
     }
-  if(fb){
+  if (fb) {
       esp_camera_fb_return(fb);
       fb = NULL;
       jpg_buf = NULL;
@@ -157,7 +165,7 @@ static esp_err_t stream_handler(httpd_req_t* req){
       free(jpg_buf);
       jpg_buf = NULL;
     }
-    if(res != ESP_OK){
+    if (res != ESP_OK) {
       break;
     }
     //Serial.printf("MJPG: %uB\n",(uint32_t)(_jpg_buf_len));
@@ -165,9 +173,9 @@ static esp_err_t stream_handler(httpd_req_t* req){
   return res;
 }
 
-void startCameraServer(){
+void startCameraServer() {
   httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-  config.server_port = 80;
+  config.server_port = CAM_PORT;
 
   httpd_uri_t index_uri = {
     .uri       = "/",
@@ -181,6 +189,7 @@ void startCameraServer(){
     httpd_register_uri_handler(stream_httpd, &index_uri);
   }
 }
+
 
 void setup() {
   Serial.begin(115200);
@@ -237,7 +246,7 @@ void setup() {
   }
   Serial.println("WiFi connected.");
 
-  ctl.begin(5000, 13);
+  ctl.begin(CTL_PORT, CTL_PIN);
 
   Serial.print("Camera Stream Ready! Go to: http://");
   Serial.print(WiFi.localIP());
@@ -248,5 +257,5 @@ void setup() {
 
 void loop() {
   ctl.checkClient();
-  delay(200);
+  delay(LOOP_DELAY);
 }

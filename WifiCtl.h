@@ -5,7 +5,12 @@
 #ifndef WIFICTL_H_
 #define WIFICTL_H_
 
+#define CTL_MOVE_FWD    0x01
+#define CTL_MOVE_LEFT   0x02
+#define CTL_MOVE_RIGHT  0x03
+
 #include <WiFi.h>
+#include <analogWrite.h>
 
 class WifiCtl {
  public:
@@ -15,6 +20,7 @@ class WifiCtl {
 
  private:
   void formResponse(WiFiClient client, bool ok);
+  void writePin(int value);
 
  private:
   WiFiServer server_;
@@ -54,12 +60,46 @@ void WifiCtl::checkClient() {
         header += c;
         if (c == '\n') {
           if (current_line.length() == 0) {
-            if (header.indexOf("GET /pin") >= 0) {
-              // Pin
-              digitalWrite(this->pin_, HIGH);
-              delay(200);
-              digitalWrite(this->pin_, LOW);
-              
+            if (header.indexOf("GET /") >= 0) {
+                client.println("HTTP/1.1 200 OK"
+                   "Content-type:text/html"
+                   "Connection: close"
+                   ""
+                   "<!DOCTYPE html><html>"
+                   "<body>"
+                   "<iframe src=\"localhost:80/\" width=\"800px\" height=\"800px\">"
+                   "<script>"
+                   "function sendRequest(uri) {"
+                   "  var xmlHttp = new XMLHttpRequest();"
+                   "  xmlHttp.open(\"GET\", uri, true);"
+                   "  xmlHttp.send(null);"
+                   "}"
+                   "document.addEventListener(\"keydown\", (e) => {"
+                   "  if (e.code == \"ArrowUp\") {"
+                   "    sendRequest(\"/move_forward\");"
+                   "  } else if (e.code == \"ArrowLeft\") {"
+                   "    sendRequest(\"/move_left\");"
+                   "  } else if (e.code == \"ArrowRight\") {"
+                   "    sendRequest(\"/move_right\");"
+                   "  } else if (e.code == \"ArrowDown\") {"
+                   "    sendRequest(\"/move_forward\");"
+                   "  }"
+                   "});"
+                   "</script>"
+                   "</body>"
+                   "</html>");
+              break;
+            } else if (header.indexOf("GET /move_forward") >= 0) {
+              Serial.println("[WifiCtl] /move_forward"); // DEBUG
+              this->writePin(CTL_MOVE_FWD);              
+              request_ok = true;
+            } else if (header.indexOf("GET /move_left") >= 0) {
+              Serial.println("[WifiCtl] /move_forward"); // DEBUG
+              this->writePin(CTL_MOVE_LEFT);
+              request_ok = true;
+            } else if (header.indexOf("GET /move_right") >= 0) {
+              Serial.println("[WifiCtl] /move_right"); // DEBUG
+              this->writePin(CTL_MOVE_RIGHT);
               request_ok = true;
             } else {
               request_ok = false;
@@ -82,24 +122,26 @@ void WifiCtl::checkClient() {
 
 void WifiCtl::formResponse(WiFiClient client, bool ok) {
   if (ok) {
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-type:text/html");
-    client.println("Connection: close");
-    client.println();
-    client.println("<!DOCTYPE html><html>");
-    client.println("<body><h1>OK</h1></body>");
-    client.println("</html>");
-    client.println();
+    client.println("HTTP/1.1 200 OK"
+                   "Content-type:text/html"
+                   "Connection: close"
+                   ""
+                   "<!DOCTYPE html><html>"
+                   "<body><h1>OK</h1></body>"
+                   "</html>");
   } else {
-    client.println("HTTP/1.1 404 Not Found");
-    client.println("Content-type:text/html");
-    client.println("Connection: close");
-    client.println();
-    client.println("<!DOCTYPE html><html>");
-    client.println("<body><h1>404 Not Found</h1><p>No such uri on the server.</p></body>");
-    client.println("</html>");
-    client.println();
+    client.println("HTTP/1.1 404 Not Found"
+                   "Content-type:text/html"
+                   "Connection: close"
+                   ""
+                   "<!DOCTYPE html><html>"
+                   "<body><h1>404 Not Found</h1><p>No such uri on the server.</p></body>"
+                   "</html>");
   }
+}
+
+void WifiCtl::writePin(int value) {
+  analogWrite(this->pin_, value);
 }
 
 #endif
