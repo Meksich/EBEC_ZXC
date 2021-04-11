@@ -1,5 +1,5 @@
-#include "WifiCtl.h"
 #include <WiFi.h>
+#include "WifiCtl.h"
 
 #include "esp_camera.h"
 #include "esp_timer.h"
@@ -11,10 +11,10 @@
 #include "esp_http_server.h"
 
 // Config
-#define CTL_PIN     11
-#define CTL_PORT    8080
-#define CAM_PORT    80
-#define LOOP_DELAY  200
+#define SERIAL_SPEED  115200
+#define CTL_PORT      8080
+#define CAM_PORT      80
+#define LOOP_DELAY    200
 
 // Camera
 #define PART_BOUNDARY "123456789000000000000987654321"
@@ -114,7 +114,7 @@ httpd_handle_t stream_httpd = NULL;
 
 WifiCtl ctl;
 
-static esp_err_t stream_handler(httpd_req_t* req){
+static esp_err_t streamHandler(httpd_req_t* req){
   camera_fb_t* fb = NULL;
   esp_err_t res = ESP_OK;
   size_t jpg_buf_len = 0;
@@ -157,7 +157,7 @@ static esp_err_t stream_handler(httpd_req_t* req){
     if (res == ESP_OK) {
       res = httpd_resp_send_chunk(req, kStreamBoundary, strlen(kStreamBoundary));
     }
-  if (fb) {
+    if (fb) {
       esp_camera_fb_return(fb);
       fb = NULL;
       jpg_buf = NULL;
@@ -180,7 +180,7 @@ void startCameraServer() {
   httpd_uri_t index_uri = {
     .uri       = "/",
     .method    = HTTP_GET,
-    .handler   = stream_handler,
+    .handler   = streamHandler,
     .user_ctx  = NULL
   };
 
@@ -192,7 +192,7 @@ void startCameraServer() {
 
 
 void setup() {
-  Serial.begin(115200);
+  Serial.begin(SERIAL_SPEED);
 
   WRITE_PERI_REG(RTC_CNTL_BROWN_OUT_REG, 0); //disable brownout detector
 
@@ -220,7 +220,7 @@ void setup() {
   config.xclk_freq_hz = 20000000;
   config.pixel_format = PIXFORMAT_JPEG;
 
-  if(psramFound()){
+  if (psramFound()) {
     config.frame_size = FRAMESIZE_UXGA;
     config.jpeg_quality = 10;
     config.fb_count = 2;
@@ -237,19 +237,19 @@ void setup() {
     return;
   }
   
-  Serial.print("Connecting to ");
-  Serial.println(kSsid);
+  // Serial.print("Connecting to ");
+  // Serial.println(kSsid);
   WiFi.begin(kSsid, kPass);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  Serial.println("WiFi connected.");
+  // Serial.println("WiFi connected.");
 
-  ctl.begin(CTL_PORT, CTL_PIN);
+  ctl.begin(CTL_PORT);
 
-  Serial.print("Camera Stream Ready! Go to: http://");
-  Serial.print(WiFi.localIP());
+  // Serial.print("Camera stream ready at http://");
+  Serial.println(WiFi.localIP());
 
   // Start streaming web server
   startCameraServer();

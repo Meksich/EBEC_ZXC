@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Rover Control</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <style>
+    .filler {
+      display: inline-block;
+      width:100px;
+      height:100px;
+    }
+    .filler_side {
+      display: inline-block;
+      width:35px;
+      height:100px;
+    }
+    .btn {
+      display: inline-block;
+      width:100px;
+      height:100px;
+      background-color: red
+    }
+    .btn:active, .btn.active {
+      background-color: green;
+    }
+  </style>
+</head>
+<body>
+  <div>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-w">W</button>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-fwd">Forward</button>   
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+  </div>
+  <div>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-a">A</button>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-space">Space</button>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-d">D</button>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-left">Left</button>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-mission">Do Mision</button>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-right">Right</button>
+  </div>
+  <div>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-s">S</button>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+    <div class="filler_side"></div>
+    <button class="btn" id="btn-back">Back</button>
+    <div class="filler_side"></div>
+    <div class="filler"></div>
+  </div>
+  <script>
+     function sendRequest(uri) {
+       var xmlHttp = new XMLHttpRequest();
+       xmlHttp.open('GET', uri, true);
+       xmlHttp.send(null);
+     }
+     function buttonOn(buttonId) {
+       $('#' + buttonId).addClass('active');
+       $('#' + buttonId).click();
+     }
+     function buttonOff(buttonId) {
+       $('#' + buttonId).removeClass('active');
+     }
+   </script>
+   <script>
+     $('#btn-fwd').on('click', () => { sendRequest('/move/fwd'); });
+     $('#btn-back').on('click', () => { sendRequest('/move/back'); });
+     $('#btn-left').on('click', () => { sendRequest('/move/left'); });
+     $('#btn-right').on('click', () => { sendRequest('/move/right'); });
+     $('#btn-w').on('click', () => { sendRequest('/crane/w'); });
+     $('#btn-s').on('click', () => { sendRequest('/crane/s'); });
+     $('#btn-a').on('click', () => { sendRequest('/crane/a'); });
+     $('#btn-d').on('click', () => { sendRequest('/crane/d'); });
+     $('#btn-space').on('click', () => { sendRequest('/crane/space'); });
+     $('#btn-mission').on('click', () => { sendRequest('/mission'); });
+     document.addEventListener('keydown', (e) => {
+       if (e.code == 'ArrowUp') {
+         buttonOn('btn-fwd')
+       } else if (e.code == "ArrowLeft") {
+         buttonOn('btn-left')
+       } else if (e.code == "ArrowRight") {
+         buttonOn('btn-right')
+       } else if (e.code == "ArrowDown") {
+         buttonOn('btn-back');
+       } else if (e.code == "KeyW") {
+          buttonOn('btn-w');
+       } else if (e.code == "KeyS") {
+          buttonOn('btn-s');
+       } else if (e.code == "KeyA") {
+          buttonOn('btn-a');
+       } else if (e.code == "KeyD") {
+          buttonOn('btn-d');
+       } else if (e.code == "Space") {
+          buttonOn('btn-space');
+       } else if (e.code == "KeyM") {
+          buttonOn('btn-mission');
+       }
+     });
+     document.addEventListener('keyup', (e) => {
+       if (e.code == 'ArrowUp') {
+         buttonOff('btn-fwd');
+       } else if (e.code == "ArrowLeft") {
+         buttonOff('btn-left');
+       } else if (e.code == "ArrowRight") {
+         buttonOff('btn-right');
+       } else if (e.code == "ArrowDown") {
+         buttonOff('btn-back');
+       } else if (e.code == "KeyW") {
+         buttonOff('btn-w');
+       } else if (e.code == "KeyS") {
+         buttonOff('btn-s');
+       } else if (e.code == "KeyA") {
+         buttonOff('btn-a');
+       } else if (e.code == "KeyD") {
+         buttonOff('btn-d');
+       } else if (e.code == "Space") {
+         buttonOff('btn-space');
+       } else if (e.code == "KeyM") {
+         buttonOff('btn-mission');
+       }
+     });
+   </script>
+</body>
+</html>

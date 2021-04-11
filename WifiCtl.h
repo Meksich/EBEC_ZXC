@@ -1,111 +1,99 @@
-/* WifiCtl.h - library for remote control over HTTP using esp32 wifi capabilities
- * 
+/* WifiCtl.h - library for remote control over HTTP using esp32's wifi capabilities
+ * Created by maxrt, 10/04/2021
  */
 
 #ifndef WIFICTL_H_
 #define WIFICTL_H_
 
-#define CTL_MOVE_FWD    0x01
-#define CTL_MOVE_LEFT   0x02
-#define CTL_MOVE_RIGHT  0x03
-
 #include <WiFi.h>
-#include <analogWrite.h>
+#include <HardwareSerial.h>
+#include "HtmlContent.h"
+
+#define CTL_SERIAL_SPEED  9600
+#define CTL_SERIAL_TX     TX
+#define CTL_SERIAL_RX     RX
 
 class WifiCtl {
  public:
   WifiCtl();
-  void begin(int server_port, int test_pin);
+  void begin(int port);
   void checkClient();
 
  private:
-  void formResponse(WiFiClient client, bool ok);
-  void writePin(int value);
+  void sendResponse(WiFiClient client, int code, String body);
+  void send200(WiFiClient client, String response);
+  void send404(WiFiClient client);
 
  private:
   WiFiServer server_;
   int port_;
-  int pin_;
 };
+
 
 WifiCtl::WifiCtl() {}
 
-void WifiCtl::begin(int server_port, int test_pin) {
-  this->port_ = server_port;
-  this->pin_ = test_pin; 
+void WifiCtl::begin(int port) {
+  this->port_ = port;
 
-  pinMode(this->pin_, OUTPUT);
-  digitalWrite(this->pin_, LOW);
+  Serial2.begin(CTL_SERIAL_SPEED, SERIAL_8N1, CTL_SERIAL_RX, CTL_SERIAL_TX);
 
-  this->server_ = WiFiServer(server_port);
+  this->server_ = WiFiServer(this->port_);
   this->server_.begin(this->port_);
-
-  Serial.println("[WifiCtl] Server address: ");
-  Serial.print(WiFi.localIP());
-  Serial.print(":");
-  Serial.println(this->port_);
+  
+//  Serial.print("[WifiCtl] Server address: ");
+//  Serial.print(WiFi.localIP());
+//  Serial.print(":");
+//  Serial.println(this->port_);
 }
 
 void WifiCtl::checkClient() {
   WiFiClient client = this->server_.available();
   if (client) {
-    Serial.println("[WifiCtl] Client has connected.");
+    // Serial.println("[WifiCtl] Client has connected.");
     String current_line = "";
     String header = "";
-    bool request_ok = true;
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
-        Serial.write(c); // DEBUG
+        //Serial.write(c); // DEBUG
         header += c;
         if (c == '\n') {
           if (current_line.length() == 0) {
-            if (header.indexOf("GET /") >= 0) {
-                client.println("HTTP/1.1 200 OK"
-                   "Content-type:text/html"
-                   "Connection: close"
-                   ""
-                   "<!DOCTYPE html><html>"
-                   "<body>"
-                   "<iframe src=\"localhost:80/\" width=\"800px\" height=\"800px\">"
-                   "<script>"
-                   "function sendRequest(uri) {"
-                   "  var xmlHttp = new XMLHttpRequest();"
-                   "  xmlHttp.open(\"GET\", uri, true);"
-                   "  xmlHttp.send(null);"
-                   "}"
-                   "document.addEventListener(\"keydown\", (e) => {"
-                   "  if (e.code == \"ArrowUp\") {"
-                   "    sendRequest(\"/move_forward\");"
-                   "  } else if (e.code == \"ArrowLeft\") {"
-                   "    sendRequest(\"/move_left\");"
-                   "  } else if (e.code == \"ArrowRight\") {"
-                   "    sendRequest(\"/move_right\");"
-                   "  } else if (e.code == \"ArrowDown\") {"
-                   "    sendRequest(\"/move_forward\");"
-                   "  }"
-                   "});"
-                   "</script>"
-                   "</body>"
-                   "</html>");
-              break;
-            } else if (header.indexOf("GET /move_forward") >= 0) {
-              Serial.println("[WifiCtl] /move_forward"); // DEBUG
-              this->writePin(CTL_MOVE_FWD);              
-              request_ok = true;
-            } else if (header.indexOf("GET /move_left") >= 0) {
-              Serial.println("[WifiCtl] /move_forward"); // DEBUG
-              this->writePin(CTL_MOVE_LEFT);
-              request_ok = true;
-            } else if (header.indexOf("GET /move_right") >= 0) {
-              Serial.println("[WifiCtl] /move_right"); // DEBUG
-              this->writePin(CTL_MOVE_RIGHT);
-              request_ok = true;
+            if (header.indexOf("GET / ") >= 0) {
+              this->send200(client, HTML_INDEX);
+            } else if (header.indexOf("GET /move/fwd") >= 0) {
+              // Serial.println("[WifiCtl] /move/fwd"); // DEBUG
+              Serial2.write('f');
+            } else if (header.indexOf("GET /move/back") >= 0) {
+              // Serial.println("[WifiCtl] /move/back"); // DEBUG
+              Serial2.write('b');
+            } else if (header.indexOf("GET /move/left") >= 0) {
+              // Serial.println("[WifiCtl] /move/left"); // DEBUG
+              Serial2.write('l');
+            } else if (header.indexOf("GET /move/right") >= 0) {
+              // Serial.println("[WifiCtl] /move/right"); // DEBUG
+              Serial2.write('r');
+            } else if (header.indexOf("GET /crane/w") >= 0) {
+              // Serial.println("[WifiCtl] /crane/w"); // DEBUG
+              Serial2.write('w');
+            } else if (header.indexOf("GET /crane/s") >= 0) {
+              // Serial.println("[WifiCtl] /crane/s"); // DEBUG
+              Serial2.write('s');
+            } else if (header.indexOf("GET /crane/a") >= 0) {
+              // Serial.println("[WifiCtl] /crane/a"); // DEBUG
+              Serial2.write('a');
+            } else if (header.indexOf("GET /crane/d") >= 0) {
+              // Serial.println("[WifiCtl] /crane/d"); // DEBUG
+              Serial2.write('d');
+            } else if (header.indexOf("GET /crane/space") >= 0) {
+              // Serial.println("[WifiCtl] /crane/space"); // DEBUG
+              Serial2.write(' ');
+            } else if (header.indexOf("GET /mission") >= 0) {
+              // Serial.println("[WifiCtl] /mission"); // DEBUG
+              Serial2.write('m');
             } else {
-              request_ok = false;
+              this->send404(client);
             }
-            
-            this->formResponse(client, request_ok);
             break;
           } else {
             current_line = "";
@@ -116,32 +104,35 @@ void WifiCtl::checkClient() {
       }
     }
     client.stop();
-    Serial.println("[WifiCtl] Client has disconnected.");
+    // Serial.println("[WifiCtl] Client has disconnected.");
   }
 }
 
-void WifiCtl::formResponse(WiFiClient client, bool ok) {
-  if (ok) {
-    client.println("HTTP/1.1 200 OK"
-                   "Content-type:text/html"
-                   "Connection: close"
-                   ""
-                   "<!DOCTYPE html><html>"
-                   "<body><h1>OK</h1></body>"
-                   "</html>");
+void WifiCtl::sendResponse(WiFiClient client, int code, String body) {
+  String http_response = "HTTP/1.1 ";
+  if (code == 200) {
+    http_response += "200 OK\r\n";
+  } else if (code == 404) {
+    http_response += "404 Not Found\r\n";
   } else {
-    client.println("HTTP/1.1 404 Not Found"
-                   "Content-type:text/html"
-                   "Connection: close"
-                   ""
-                   "<!DOCTYPE html><html>"
-                   "<body><h1>404 Not Found</h1><p>No such uri on the server.</p></body>"
-                   "</html>");
+    http_response += "500 Internal Server Error\r\n";
   }
+
+  http_response += "Connection: close\r\n";
+  http_response += "Content-Type: text/html\r\n";
+  http_response += "Content-Length: " + String(body.length());
+  http_response += "\r\n\r\n" + body;
+
+  client.println(http_response);
 }
 
-void WifiCtl::writePin(int value) {
-  analogWrite(this->pin_, value);
+void WifiCtl::send200(WiFiClient client, String response) {
+  this->sendResponse(client, 200, response);
 }
+
+void WifiCtl::send404(WiFiClient client) {
+  this->sendResponse(client, 404, HTML_404);
+}
+
 
 #endif
