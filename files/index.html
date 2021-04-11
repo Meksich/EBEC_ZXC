@@ -27,6 +27,10 @@
 </head>
 <body>
   <div>
+    <input type="checkbox" id="delay" name="delay" checked>
+    <label for="delay">Delay 10s</label>
+  </div>
+  <div>
     <div class="filler_side"></div>
     <div class="filler"></div>
     <div class="filler_side"></div>
@@ -75,7 +79,13 @@
     <div class="filler"></div>
   </div>
   <script>
-     function sendRequest(uri) {
+     function sleep(ms) {
+       return new Promise(resolve => setTimeout(resolve, ms));
+     }
+     async function sendRequest(uri) {
+       if (document.getElementById('delay').checked) {
+        await sleep(10000);
+       }
        var xmlHttp = new XMLHttpRequest();
        xmlHttp.open('GET', uri, true);
        xmlHttp.send(null);
