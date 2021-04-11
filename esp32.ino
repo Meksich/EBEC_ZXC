@@ -1,3 +1,10 @@
+/* esp32.ino - software that streams camera and manages WifiCtl for remote rover control
+ * Created by maxrt, 10/04/2021
+ * 
+ * For general debugging define _ESP32_DEBUG_SERIAL
+ * For camera debugging, define _ESP32_DEBUG_SERIAL_CAMERA
+ */
+
 #include <WiFi.h>
 #include "WifiCtl.h"
 
@@ -168,7 +175,9 @@ static esp_err_t streamHandler(httpd_req_t* req){
     if (res != ESP_OK) {
       break;
     }
-    //Serial.printf("MJPG: %uB\n",(uint32_t)(_jpg_buf_len));
+#ifdef _ESP32_DEBUG_SERIAL_CAMERA
+    Serial.printf("MJPG: %uB\n",(uint32_t)(_jpg_buf_len));
+#endif
   }
   return res;
 }
@@ -184,7 +193,9 @@ void startCameraServer() {
     .user_ctx  = NULL
   };
 
-  //Serial.printf("Starting web server on port: '%d'\n", config.server_port);
+#ifdef _ESP32_DEBUG_SERIAL_CAMERA
+  Serial.printf("Starting web server on port: '%d'\n", config.server_port);
+#endif
   if (httpd_start(&stream_httpd, &config) == ESP_OK) {
     httpd_register_uri_handler(stream_httpd, &index_uri);
   }
@@ -236,20 +247,26 @@ void setup() {
     Serial.printf("Camera init failed with error 0x%x", err);
     return;
   }
-  
-  // Serial.print("Connecting to ");
-  // Serial.println(kSsid);
+
+#ifdef _ESP32_DEBUG_SERIAL
+  Serial.print("Connecting to ");
+  Serial.println(kSsid);
+#endif
   WiFi.begin(kSsid, kPass);
   while (WiFi.status() != WL_CONNECTED) {
     delay(500);
     Serial.print(".");
   }
-  // Serial.println("WiFi connected.");
+#ifdef _ESP32_DEBUG_SERIAL
+  Serial.println("WiFi connected.");
+#endif
 
   ctl.begin(CTL_PORT);
 
-  // Serial.print("Camera stream ready at http://");
+#ifdef _ESP32_DEBUG_SERIAL
+  Serial.print("Camera stream ready at http://");
   Serial.println(WiFi.localIP());
+#endif
 
   // Start streaming web server
   startCameraServer();

@@ -34,6 +34,10 @@
     "  </style>\n" \
     "</head>\n" \
     "<body>\n" \
+    " <div>\n" \
+    "   <input type=\"checkbox\" id=\"delay\" name=\"delay\" checked>\n" \
+    "   <label for=\"delay\">Delay 10s</label>\n" \
+    "  </div>\n" \
     "  <div>\n" \
     "    <div class=\"filler_side\"></div>\n" \
     "    <div class=\"filler\"></div>\n" \
@@ -83,7 +87,13 @@
     "    <div class=\"filler\"></div>\n" \
     "  </div>\n" \
     "  <script>\n" \
-    "     function sendRequest(uri) {\n" \
+    "     function sleep(ms) {\n" \
+    "       return new Promise(resolve => setTimeout(resolve, ms));\n" \
+    "     }\n" \
+    "     async function sendRequest(uri) {\n" \
+    "       if (document.getElementById('delay').checked) {\n" \
+    "         await sleep(10000);\n" \
+    "       }\n" \
     "       var xmlHttp = new XMLHttpRequest();\n" \
     "       xmlHttp.open('GET', uri, true);\n" \
     "       xmlHttp.send(null);\n" \
@@ -109,11 +119,11 @@
     "     $('#btn-mission').on('click', () => { sendRequest('/mission'); });\n" \
     "     document.addEventListener('keydown', (e) => {\n" \
     "       if (e.code == 'ArrowUp') {\n" \
-    "         buttonOn('btn-fwd')\n" \
+    "         buttonOn('btn-fwd');\n" \
     "       } else if (e.code == 'ArrowLeft') {\n" \
-    "         buttonOn('btn-left')\n" \
+    "         buttonOn('btn-left');\n" \
     "       } else if (e.code == 'ArrowRight') {\n" \
-    "         buttonOn('btn-right')\n" \
+    "         buttonOn('btn-right');\n" \
     "       } else if (e.code == 'ArrowDown') {\n" \
     "         buttonOn('btn-back');\n" \
     "       } else if (e.code == 'KeyW') {\n" \

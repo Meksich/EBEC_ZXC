@@ -1,12 +1,14 @@
 /* WifiCtl.h - library for remote control over HTTP using esp32's wifi capabilities
  * Created by maxrt, 10/04/2021
+ *
+ * For server debugging, define _ESP32_DEBUG_SERIAL
+ * For requests debugging, define _ESP32_DEBUG_SERIAL_PRINT_REQUEST
  */
 
 #ifndef WIFICTL_H_
 #define WIFICTL_H_
 
 #include <WiFi.h>
-#include <HardwareSerial.h>
 #include "HtmlContent.h"
 
 #define CTL_SERIAL_SPEED  9600
@@ -35,65 +37,66 @@ WifiCtl::WifiCtl() {}
 void WifiCtl::begin(int port) {
   this->port_ = port;
 
+#ifndef _ESP32_DEBUG_SERIAL
   Serial2.begin(CTL_SERIAL_SPEED, SERIAL_8N1, CTL_SERIAL_RX, CTL_SERIAL_TX);
+#endif
 
   this->server_ = WiFiServer(this->port_);
   this->server_.begin(this->port_);
-  
-//  Serial.print("[WifiCtl] Server address: ");
-//  Serial.print(WiFi.localIP());
-//  Serial.print(":");
-//  Serial.println(this->port_);
+
+#ifdef _ESP32_DEBUG_SERIAL
+  Serial.print("[WifiCtl] Server address: ");
+  Serial.print(WiFi.localIP());
+  Serial.print(":");
+  Serial.println(this->port_);
+#endif
 }
 
 void WifiCtl::checkClient() {
   WiFiClient client = this->server_.available();
   if (client) {
-    // Serial.println("[WifiCtl] Client has connected.");
+#ifdef _ESP32_DEBUG_SERIAL
+    Serial.println("[WifiCtl] Client has connected.");
+#endif
     String current_line = "";
     String header = "";
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
-        //Serial.write(c); // DEBUG
+#ifdef _ESP32_DEBUG_SERIAL_PRINT_REQUEST
+        Serial.write(c); // DEBUG
+#endif
         header += c;
         if (c == '\n') {
           if (current_line.length() == 0) {
             if (header.indexOf("GET / ") >= 0) {
               this->send200(client, HTML_INDEX);
             } else if (header.indexOf("GET /move/fwd") >= 0) {
-              // Serial.println("[WifiCtl] /move/fwd"); // DEBUG
               Serial2.write('f');
             } else if (header.indexOf("GET /move/back") >= 0) {
-              // Serial.println("[WifiCtl] /move/back"); // DEBUG
               Serial2.write('b');
             } else if (header.indexOf("GET /move/left") >= 0) {
-              // Serial.println("[WifiCtl] /move/left"); // DEBUG
               Serial2.write('l');
             } else if (header.indexOf("GET /move/right") >= 0) {
-              // Serial.println("[WifiCtl] /move/right"); // DEBUG
               Serial2.write('r');
             } else if (header.indexOf("GET /crane/w") >= 0) {
-              // Serial.println("[WifiCtl] /crane/w"); // DEBUG
               Serial2.write('w');
             } else if (header.indexOf("GET /crane/s") >= 0) {
-              // Serial.println("[WifiCtl] /crane/s"); // DEBUG
               Serial2.write('s');
             } else if (header.indexOf("GET /crane/a") >= 0) {
-              // Serial.println("[WifiCtl] /crane/a"); // DEBUG
               Serial2.write('a');
             } else if (header.indexOf("GET /crane/d") >= 0) {
-              // Serial.println("[WifiCtl] /crane/d"); // DEBUG
               Serial2.write('d');
             } else if (header.indexOf("GET /crane/space") >= 0) {
-              // Serial.println("[WifiCtl] /crane/space"); // DEBUG
               Serial2.write(' ');
             } else if (header.indexOf("GET /mission") >= 0) {
-              // Serial.println("[WifiCtl] /mission"); // DEBUG
               Serial2.write('m');
             } else {
               this->send404(client);
             }
+#ifdef _ESP32_DEBUG_SERIAL
+            Serial.println("[WifiCtl] " + header); // DEBUG
+#endif
             break;
           } else {
             current_line = "";
@@ -104,7 +107,9 @@ void WifiCtl::checkClient() {
       }
     }
     client.stop();
-    // Serial.println("[WifiCtl] Client has disconnected.");
+#ifdef _ESP32_DEBUG_SERIAL
+    Serial.println("[WifiCtl] Client has disconnected.");
+#endif
   }
 }
 
